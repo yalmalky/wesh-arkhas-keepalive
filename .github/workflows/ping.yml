@@ -1,0 +1,35 @@
+# Keeps the «وش أرخص» Render free instance awake 06:00–02:00 Asia/Riyadh (UTC+3).
+# Riyadh 06:00–01:55 = UTC 03:00–22:55, plus 02:00 Riyadh = 23:00 UTC. Public repo -> Actions minutes are free.
+name: keep-alive
+on:
+  schedule:
+    - cron: '*/5 3-22 * * *'
+    - cron: '0 23 * * *'
+    - cron: '17 4 1 * *'      # monthly keep-active commit (GitHub disables schedules after 60 idle days)
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: ping, cancel-in-progress: true }
+jobs:
+  ping:
+    if: github.event.schedule != '17 4 1 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /health
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /tmp/h.json -w '%{http_code}' -m 90 https://wesh-arkhas.onrender.com/health) || true
+            echo "try $i -> $code"; [ "$code" = 200 ] && { cat /tmp/h.json; echo; exit 0; }; sleep 10
+          done
+          exit 1
+  keep-active:
+    if: github.event.schedule == '17 4 1 * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          date -u +%FT%TZ > last-active.txt
+          git config user.name 'keepalive-bot'; git config user.email 'actions@users.noreply.github.com'
+          git add last-active.txt; git commit -m 'monthly keep-active' && git push
