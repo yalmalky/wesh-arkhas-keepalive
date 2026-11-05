@@ -1,4 +1,4 @@
-# Keeps the «وش أرخص» Render free instance awake 06:00–02:00 Asia/Riyadh (UTC+3).
+# Keeps Render free instances awake 06:00–02:00 Asia/Riyadh (UTC+3).
 # Riyadh 06:00–01:55 = UTC 03:00–22:55, plus 02:00 Riyadh = 23:00 UTC. Public repo -> Actions minutes are free.
 name: keep-alive
 on:
@@ -11,15 +11,27 @@ permissions:
   contents: write
 concurrency: { group: ping, cancel-in-progress: true }
 jobs:
-  ping:
+  ping-wesh:
     if: github.event.schedule != '17 4 1 * *'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Ping /health
+      - name: Ping وesh-arkhas /health
         run: |
           for i in 1 2 3; do
             code=$(curl -s -o /tmp/h.json -w '%{http_code}' -m 90 https://wesh-arkhas.onrender.com/health) || true
+            echo "try $i -> $code"; [ "$code" = 200 ] && { cat /tmp/h.json; echo; exit 0; }; sleep 10
+          done
+          exit 1
+  ping-dalla3:
+    if: github.event.schedule != '17 4 1 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping dalla3-api /health
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /tmp/h.json -w '%{http_code}' -m 90 https://dalla3-api.onrender.com/health) || true
             echo "try $i -> $code"; [ "$code" = 200 ] && { cat /tmp/h.json; echo; exit 0; }; sleep 10
           done
           exit 1
