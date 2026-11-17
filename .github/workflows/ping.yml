@@ -35,6 +35,27 @@ jobs:
             echo "try $i -> $code"; [ "$code" = 200 ] && { cat /tmp/h.json; echo; exit 0; }; sleep 10
           done
           exit 1
+  ping-triage-one:
+    if: github.event.schedule != '17 4 1 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping Triage One legal pages and /health
+        run: |
+          ping() {
+            local url="$1"
+            for i in 1 2 3; do
+              code=$(curl -s -o /tmp/h.body -w '%{http_code}' -m 90 "$url") || true
+              echo "$url try $i -> $code"
+              [ "$code" = "200" ] && return 0
+              sleep 10
+            done
+            return 1
+          }
+          ping https://triage-one.onrender.com/privacy || exit 1
+          ping https://triage-one.onrender.com/terms || exit 1
+          ping https://triage-one.onrender.com/support || exit 1
+          ping https://triage-one.onrender.com/health || exit 1
   keep-active:
     if: github.event.schedule == '17 4 1 * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
